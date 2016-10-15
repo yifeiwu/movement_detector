@@ -14,7 +14,7 @@ Movement Detector
 Based on the Lucas-Kanade optical flow demo code in OpenCV.
 Usage
 -----
-lk_track.py [<video_source>]
+opt_flow2.py [<video_source>]
 output: video with flowlines or csv with timepoints where significant movement is detected
 '''
 
@@ -27,6 +27,7 @@ from common import anorm2, draw_str
 import time 
 import csv
 import logging
+import ntpath
 lk_params = dict( winSize  = (15, 15),
                   maxLevel = 3,
                   criteria = (cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 10, 0.03))
@@ -42,11 +43,13 @@ class App:
         self.detect_interval = 5
         self.tracks = []
         self.cam = video.create_capture(video_src)
+        self.video_src = video_src
         self.frame_idx = 0
 
     def run(self):
 
         dir(self.cam)
+        #output will not work if these don't match source size
         frame_width =  720
         frame_height=  576
 
@@ -89,25 +92,26 @@ class App:
                     if len(tr) > self.track_len:
                         del tr[0]
                     new_tracks.append(tr)
-                    #cv2.circle(vis, (x, y), 2, (0, 255, 0), -1) #draw points
+                    cv2.circle(vis, (x, y), 2, (0, 0, 255), -1) #draw points
                 self.tracks = new_tracks
 
-                #cv2.polylines(vis, [np.int32(tr) for tr in self.tracks], False, (0, 255, 0)) #draw vectors
+                cv2.polylines(vis, [np.int32(tr) for tr in self.tracks], False, (0, 0, 255)) #draw vectors
                 
                 for tr in self.tracks:
                     diff = np.array(tr[1]) - np.array(tr[0])
                     maxdisp.append(LA.norm(diff,2))
                 #frame statistics
-                #draw_str(vis, (20, 20), 'Flow Magnitude: %d' % max(maxdisp)) 
-                #draw_str(vis, (20, 40), 'Points Tracked: %d' % len(self.tracks))
+
+                draw_str(vis, (20, 20), 'Source: %s @ %d:%d' % (ntpath.basename(self.video_src), int(self.frame_idx/(60*25)), (self.frame_idx/25)%60 ))
+                draw_str(vis, (20, 40), 'Flow Magnitude: %d' % max(maxdisp)) 
                 
                 #output
                 significance = max(maxdisp)> 3
                 if significance:
                     row = [self.frame_idx, int(self.frame_idx/(60*25)), (self.frame_idx/25)%60, max(maxdisp)]
                     writer.writerow(row)
-                    elapsed_time = time.time() - start_time
-                    logging.warning( "Processing video at %d:%d. Significance %r. Elapsed time: %s" % (int(self.frame_idx/(60*25)), (self.frame_idx/25)%60, max(maxdisp), str(elapsed_time)  ))
+                    #elapsed_time = time.time() - start_time
+                    logging.warning( "Processing video at %d:%d. Displacement Magnitude %r." % (int(self.frame_idx/(60*25)), (self.frame_idx/25)%60, max(maxdisp)  ))
 
 
             if self.frame_idx % self.detect_interval == 0:
@@ -124,7 +128,7 @@ class App:
             self.prev_gray = frame_gray
 
             #cv2.imshow('lk_track', vis)
-            #out.write(vis)
+            out.write(vis)
 
 
             ch = 0xFF & cv2.waitKey(1)
