@@ -1,4 +1,8 @@
-# movement_detector
+# This repo is outdated and for reference only. See updates at the main project page 
+
+https://healthhackau2016.github.io/Melbourne-Mouse-Movement-Detection-in-Videos/
+
+
 ## Mouse Movement detector for HealthHack Melbourne 2016
 ## Project Description
 
